@@ -19,7 +19,8 @@
   "scripts": {
     "build": "tsc",
     "test": "playwright test",
-    "report": "playwright show-report"
+    "report": "playwright show-report",
+    "format": "lint-staged"
   },
   "dependencies": {},
   "lint-staged": {
