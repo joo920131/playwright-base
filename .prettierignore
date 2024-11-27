@@ -1,0 +1,2 @@
+# ignore dist folder (this is just for type checking)
+./dist
