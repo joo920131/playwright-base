@@ -1,0 +1,97 @@
+#!/usr/bin/env bash
+function displayErrorMessage() {
+    # Uh-oh, this is not a conventional commit, show an example and link to the spec.
+    echo "\033[31mError:\033[0m The commit message does not meet the Conventional Commit standards ❌"
+    echo "***********************************************************************"
+    echo "An example of a valid messages are: "
+    echo "  fix: invalid request for login api"
+    echo "---------"
+    echo "  feat(login): add the 'remember me' button"
+    echo "---------"
+    echo "  chore(user): email address is empty on profile api"
+    echo "---------"
+    echo "  chore: publish"
+    echo ""
+    echo "  * database fixes"
+    echo "  * bug fixes"
+    echo "---------"
+    echo "  feat!: Updated user authentication"
+    echo ""
+    echo "  BREAKING CHANGE: User role permission no longer works"
+    echo "---------"
+    echo "More details at: https://www.conventionalcommits.org/en/v1.0.0/#summary"
+}
+
+commit_types="build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test"
+conventional_commit_head_regex="^($commit_types){1}(\([^)(]*\))?!?: .{1,50}$"
+
+counter=0
+
+# used to determine if this is end of commit message line
+# ... needed for scenario where commit message is ammended
+max_comment_count=5 
+comment_count=0
+
+# Read the commit message file line by line to cater for squashed messages
+while IFS= read -r line; do
+    counter=$((counter+1))
+    if [[ -z "$line" ]]; then
+        # Skip empty lines
+        continue
+    fi
+
+    # For the first line, check against conventional_commit_head_regex
+    if [[ $counter -eq 1 ]]; then
+        # case insensitive match
+        if (
+            shopt -s nocasematch; 
+            [[ ! "$line" =~ $conventional_commit_head_regex ]]
+        ); then
+            displayErrorMessage
+            echo "***********************************************************************"
+            echo "For the first line of commit messages, check that it meets the format below:"
+            echo "  <type>: <subject>"
+            echo "  <type>(<scope>): <subject>"
+            echo "  <type>!: <subject> # for highlighting breaking changes"
+            echo ""
+            echo "  <types> can either be: ${commit_types} terminated by colon and a space (: )"
+            echo "  <scope> is optional"
+            echo "  <subject> minimum and maximum size of 1 and 50"
+            echo ""
+            echo "  - Multi-line Commit messages (e.g. squashed) can be written in next lines"
+            echo "  - Leave a blank line after first commit message, then consequent lines can begin with asterisk and a space (* )"
+            echo "  - Indicate breaking changes by !: before subject"
+            echo "  - Start the multi-line with BREAKING CHANGE: for breaking changes that need to be highlighted"
+            exit 1
+        fi
+    elif [[ $counter -eq 2 ]]; then
+        if [[ ! -z "$line" ]]; then
+            displayErrorMessage
+            echo "***********************************************************************"
+            echo "For multi-line commit messages, leave second line as blank (no spaces)"
+            exit 1
+        fi
+    # For subsequent lines, check that it starts with an asterisk and space (* ) or BREAKING CHANGE: 
+    else
+        # Check until you see a # comment section in the git commit message window 5 consecutive times
+        if [[ "$line" =~ ^# && "$comment_count" -lt "$max_comment_count" ]]; then
+            comment_count=$(( comment_count + 1 ))
+            continue
+        elif [[ "$comment_count" -ge "$max_comment_count" ]]; then
+            # stop checking messages once consecutive comments have reached maximum
+            # once this condition is reached, assumes that it's the end of the commit message
+            break
+        elif [[ ! "$line" =~ ^\*\  && "$line" != "BREAKING CHANGE: "* ]]; then
+            displayErrorMessage
+            echo "***********************************************************************"
+            echo "For subsequent lines, check that it starts with an asterisk and a space (* )"
+            echo "Or, start with upper case breaking change, colon, and a space (BREAKING CHANGE: )"
+            exit 1
+        else
+            comment_count=0
+        fi
+    fi
+done < "$1"
+
+echo "\033[32mCommitted:\033[0m Commit message meets Conventional Commit standards ✅"
+exit 0
