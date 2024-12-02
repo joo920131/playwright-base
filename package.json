@@ -20,7 +20,7 @@
     "build": "tsc",
     "test": "playwright test",
     "report": "playwright show-report",
-    "format": "lint-staged"
+    "format": "prettier . --write --ignore-unknown"
   },
   "dependencies": {},
   "lint-staged": {
