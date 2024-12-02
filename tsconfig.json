@@ -10,9 +10,10 @@
     "noEmit": false,
     "rootDir": ".",
     "baseUrl": ".",
+    "noImplicitAny": true,
     "types": ["playwright"]
   },
-  "include": ["./tests/**/*.ts"],
+  "include": ["./tests/**/*.ts", "./lib/**/*.ts"],
   "ts-node": {
     "files": true
   }
