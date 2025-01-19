@@ -1,43 +1,37 @@
-import type { Page, Locator } from "@playwright/test";
+import { type Page } from "@playwright/test";
 import { exampleTodoItems } from "../../constants/todo.items";
 import { createRandomString } from "../../utils/random.utils";
+import { step } from "lib/utils/playwright.utils";
 
 export class TodoPage {
-  readonly inputBox: Locator;
-  readonly todoItems: Locator;
-  readonly todoTitles: Locator;
-  readonly todoCount: Locator;
-  readonly markAllAsCompleted: Locator;
-  readonly filterAll: Locator;
-  readonly filterActive: Locator;
-  readonly filterCompleted: Locator;
+  constructor(
+    public readonly page: Page,
+    readonly inputBox = page.locator("input.new-todo"),
+    readonly todoItems = page.getByTestId("todo-item"),
+    readonly todoTitles = page.getByTestId("todo-title"),
+    readonly todoCount = page.getByTestId("todo-count"),
+    readonly markAllAsCompleted = page.locator("#toggle-all"),
+    readonly filterAll = page.getByRole("link", { name: "All" }),
+    readonly filterActive = page.getByRole("link", { name: "Active" }),
+    readonly filterCompleted = page.getByRole("link", {
+      name: "Completed",
+    })
+  ) {}
 
-  constructor(public readonly page: Page) {
-    this.inputBox = this.page.locator("input.new-todo");
-    this.todoItems = this.page.getByTestId("todo-item");
-    this.todoTitles = this.page.getByTestId("todo-title");
-    this.todoCount = this.page.getByTestId("todo-count");
-    this.markAllAsCompleted = this.page.locator("#toggle-all");
-    this.filterAll = this.page.getByRole("link", { name: "All" });
-    this.filterActive = this.page.getByRole("link", { name: "Active" });
-    this.filterCompleted = this.page.getByRole("link", { name: "Completed" });
-  }
-
-  async goto() {
-    await this.page.goto("https://demo.playwright.dev/todomvc/");
-  }
-
+  @step("Add todo item")
   async addToDo(text: string) {
     await this.inputBox.fill(text);
     await this.inputBox.press("Enter");
   }
 
+  @step("Remove todo item")
   async remove(text: string) {
     const todo = this.todoItems.filter({ hasText: text });
     await todo.hover();
     await todo.getByLabel("Delete").click();
   }
 
+  @step("Remove all todos")
   async removeAll() {
     while ((await this.todoItems.count()) > 0) {
       await this.todoItems.first().hover();
@@ -45,10 +39,12 @@ export class TodoPage {
     }
   }
 
+  @step()
   async getExampleTodoItems(): Promise<typeof exampleTodoItems> {
     return exampleTodoItems;
   }
 
+  @step()
   async filterBy(name: "All" | "Active" | "Completed") {
     const locator = (() => {
       switch (name) {
@@ -72,6 +68,7 @@ export class TodoPage {
    * @returns {Promise<string[]>} A promise that resolves to an array of strings representing
    * the newly entered todo items.
    */
+  @step()
   async createExampleTodos() {
     const enteredRecords: string[] = [];
     for (const item of exampleTodoItems) {
@@ -89,18 +86,21 @@ export class TodoPage {
    * @param {number} length - The length of the random string to be generated.
    * @returns {Promise<string>} A promise that resolves to the random string added as a todo item.
    */
+  @step("Add random todo item")
   async addRandomTodo(length: number = 5): Promise<string> {
     const randomTodo = createRandomString(length);
     await this.addToDo(randomTodo);
     return randomTodo;
   }
 
+  @step()
   async checkNumberOfTodosInLocalStorage(expected: number) {
     return await this.page.waitForFunction((e) => {
       return JSON.parse(localStorage["react-todos"]).length === e;
     }, expected);
   }
 
+  @step()
   async checkNumberOfCompletedTodosInLocalStorage(expected: number) {
     return await this.page.waitForFunction((e) => {
       return (
@@ -111,6 +111,7 @@ export class TodoPage {
     }, expected);
   }
 
+  @step()
   async checkTodosInLocalStorage(title: string) {
     return await this.page.waitForFunction((t) => {
       return JSON.parse(localStorage["react-todos"])
